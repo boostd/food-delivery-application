@@ -7,16 +7,12 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
 import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
-
-import java.time.LocalDateTime;
 
 /**
  * Holds data about a weather observation made at a weather station.
  */
-@AllArgsConstructor
 @NoArgsConstructor
 @Getter
 @Setter
@@ -29,9 +25,19 @@ public class WeatherData {
 
     private String stationName;
 
-    private String wmoCode;
+    private Integer wmoCode;
     private Double airTemperature;
     private Double windSpeed;
     private String weatherPhenomenon;
-    private LocalDateTime timeStamp;
+    private Integer timeStamp;
+
+    public WeatherData(String stationName, Integer wmoCode, Double airTemperature, Double windSpeed, String weatherPhenomenon,
+                Integer timeStamp) {
+        this.stationName = stationName;
+        this.wmoCode = wmoCode;
+        this.airTemperature = airTemperature;
+        this.windSpeed = windSpeed;
+        this.weatherPhenomenon = weatherPhenomenon;
+        this.timeStamp = timeStamp;
+    }
 }
