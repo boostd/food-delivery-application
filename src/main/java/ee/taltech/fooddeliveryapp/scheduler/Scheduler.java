@@ -2,18 +2,21 @@ package ee.taltech.fooddeliveryapp.scheduler;
 
 import jakarta.annotation.PostConstruct;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.concurrent.ConcurrentTaskScheduler;
 import org.springframework.scheduling.support.CronTrigger;
 
 import java.util.concurrent.ScheduledFuture;
 
-public  class Scheduler implements Runnable {
+public class Scheduler implements Runnable {
 
     @SuppressWarnings("rawtypes")
     private ScheduledFuture scheduledFuture;
     private TaskScheduler taskScheduler;
-    private final ImportWeatherTask task = new ImportWeatherTask();
+    @Autowired
+    private ImportWeatherTask task;
+
 
     /**
      * This method kills the previous scheduler if it exists and creates a new scheduler with given cron expression.
@@ -45,6 +48,7 @@ public  class Scheduler implements Runnable {
      */
     @PostConstruct
     public void initializeScheduler() {
-        this.reSchedule("15 * * * *");
+        this.run();
+        this.reSchedule("0 15 * * * *");
     }
 }

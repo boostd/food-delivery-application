@@ -4,11 +4,14 @@ import ee.taltech.fooddeliveryapp.database.WeatherData;
 import ee.taltech.fooddeliveryapp.database.WeatherDataRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.w3c.dom.Document;
-import org.w3c.dom.Element;
+import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathFactory;
 
 import java.io.InputStream;
 import java.net.URL;
@@ -16,10 +19,15 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Optional;
 
+import static java.util.function.Predicate.not;
+
 public class ImportWeatherTask {
 
-    private Document lastXML;
+    /**
+     * WMO codes of the Tallinn-Harku, Tartu-Tõravere, and Pärnu weather stations respectively.
+     */
     private final ArrayList<Integer> wmoCodeList = new ArrayList<>(Arrays.asList(26038, 26242, 41803));
+    private Document lastXML;
 
     @Autowired
     WeatherDataRepository weatherDataRepository;
@@ -34,16 +42,13 @@ public class ImportWeatherTask {
         Document doc = loadXML();
         WeatherData[] data = parseXML(doc);
 
-        for (WeatherData entry : data) {
-            if (!wmoCodeList.contains(entry.getWmoCode())) {
-                continue;
-            }
-
-            weatherDataRepository.save(entry);
-        }
-
+        weatherDataRepository.saveAll(Arrays.asList(data));
     }
 
+    /**
+     * Gets the XML file of weather data from ilmateenistus.ee and returns it as a Document.
+     * @return Current weather data as a Document.
+     */
     private Document loadXML() {
         try {
             DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
@@ -64,42 +69,58 @@ public class ImportWeatherTask {
         }
     }
 
+    /**
+     * Loops over the Document and finds the required stations. Checks if values are empty in which case assigns
+     * default values. Instantiates WeatherData objects and returns them as an array.
+     * @param doc XML Document containing the current weather data.
+     * @return WeatherData array from Tallinn-Harku, Tartu-Tõravere, and Pärnu weather stations.
+     */
     private WeatherData[] parseXML(Document doc) {
         try {
             ArrayList<WeatherData> output = new ArrayList<>();
-
-            String name;
-            int wmocode;
-            String phenomenon;
-            double airTemperature;
-            double windSpeed;
+            XPath xpath = XPathFactory.newInstance().newXPath();
 
             // Extract the timestamp
-            Integer timestamp = Optional.of(Integer.parseInt(doc.getDocumentElement().getAttribute("timestamp")))
-                    .orElse(0);
+            Integer timeStamp = Integer.parseInt((Optional.of(doc.getDocumentElement().getAttribute("timestamp")))
+                    .orElse("0"));
 
             // Extract data from each station
-            NodeList stationList = doc.getElementsByTagName("station");
-            for (int i = 0; i < stationList.getLength(); i++) {
-                Element station = (Element) stationList.item(i);
-                name = Optional.ofNullable(station.getElementsByTagName("name").item(0).getTextContent())
-                        .orElse("NaN");
-                wmocode = Optional.of(Integer.parseInt(station.getElementsByTagName("wmocode").item(0)
-                        .getTextContent())).orElse(0);
-                phenomenon = Optional.of(station.getElementsByTagName("phenomenon").item(0).getTextContent())
-                        .orElse("NaN");
-                airTemperature = Optional.of(Double.parseDouble(station.getElementsByTagName("airtemperature")
-                        .item(0).getTextContent())).orElse(0.0);
-                windSpeed = Optional.of(Double.parseDouble(station.getElementsByTagName("windspeed").item(0)
-                        .getTextContent())).orElse(0.0);
+            NodeList stations = (NodeList) xpath.evaluate("//station", doc, XPathConstants.NODESET);
+            for (int i = 0; i < stations.getLength(); i++) {
+                Node station = stations.item(i);
+                Integer wmoCode = (Optional.ofNullable(xpath.evaluate("wmocode", station)))
+                        .filter(not(String::isEmpty))
+                        .map(Integer::parseInt)
+                        .orElse(0);
 
-                output.add(new WeatherData(name, wmocode, airTemperature, windSpeed, phenomenon, timestamp));
+                //Only proceed if current station is one of three were interested in
+                if (!wmoCodeList.contains(wmoCode)) {
+                    continue;
+                }
+
+                String name = Optional.ofNullable(xpath.evaluate("name", station))
+                        .filter(not(String::isEmpty))
+                        .orElse("NaN");
+                String phenomenon = (Optional.of(xpath.evaluate("phenomenon", station)))
+                        .filter(not(String::isEmpty))
+                        .orElse("NaN");
+                Double airTemperature = Optional.of(xpath.evaluate("airtemperature", station))
+                        .filter(not(String::isEmpty))
+                        .map(Double::parseDouble)
+                        .orElse(0.0);
+                Double windSpeed = Optional.of(xpath.evaluate("windspeed", station))
+                        .filter(not(String::isEmpty))
+                        .map(Double::parseDouble)
+                        .orElse(0.0);
+
+                output.add(new WeatherData(name, wmoCode, airTemperature, windSpeed, phenomenon, timeStamp));
             }
 
             //type checking to suppress a null warning
             WeatherData[] result = new WeatherData[output.size()];
             output.toArray(result);
             return result;
+
         } catch (Exception e) {
             throw new RuntimeException();
         }

@@ -1,20 +1,26 @@
 package ee.taltech.fooddeliveryapp.config;
 
-import ee.taltech.fooddeliveryapp.database.WeatherDataRepository;
 import ee.taltech.fooddeliveryapp.scheduler.ImportWeatherTask;
-import org.springframework.beans.factory.annotation.Autowired;
+import ee.taltech.fooddeliveryapp.scheduler.Scheduler;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 @Configuration
 @EnableScheduling
+@EnableJpaRepositories(basePackages = {"ee.taltech.fooddeliveryapp.database"})
+@ComponentScan(basePackages = {"ee.taltech.fooddeliveryapp.database"})
 public class AppConfig {
-    @Autowired
-    WeatherDataRepository weatherDataRepository;
 
     @Bean
     public ImportWeatherTask importWeatherTask() {
         return new ImportWeatherTask();
+    }
+
+    @Bean
+    public Scheduler scheduler() {
+        return new Scheduler();
     }
 }
