@@ -1,7 +1,8 @@
 package ee.taltech.fooddeliveryapp.scheduler;
 
+import ee.taltech.fooddeliveryapp.common.WMOCodes;
 import ee.taltech.fooddeliveryapp.database.WeatherData;
-import ee.taltech.fooddeliveryapp.database.WeatherDataRepository;
+import ee.taltech.fooddeliveryapp.database.WeatherDataService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
@@ -26,11 +27,12 @@ public class ImportWeatherTask {
     /**
      * WMO codes of the Tallinn-Harku, Tartu-Tõravere, and Pärnu weather stations respectively.
      */
-    private final ArrayList<Integer> wmoCodeList = new ArrayList<>(Arrays.asList(26038, 26242, 41803));
+    private final ArrayList<Integer> wmoCodeList = new ArrayList<>(Arrays.asList(WMOCodes.TALLINN_HARKU,
+            WMOCodes.TARTU_TORAVERE, WMOCodes.PARNU));
     private Document lastXML;
 
     @Autowired
-    WeatherDataRepository weatherDataRepository;
+    WeatherDataService weatherDataService;
 
     /**
      * Gets an XML file from
@@ -42,7 +44,7 @@ public class ImportWeatherTask {
         Document doc = loadXML();
         WeatherData[] data = parseXML(doc);
 
-        weatherDataRepository.saveAll(Arrays.asList(data));
+        weatherDataService.saveAllWeatherData(Arrays.asList(data));
     }
 
     /**
@@ -116,7 +118,6 @@ public class ImportWeatherTask {
                 output.add(new WeatherData(name, wmoCode, airTemperature, windSpeed, phenomenon, timeStamp));
             }
 
-            //type checking to suppress a null warning
             WeatherData[] result = new WeatherData[output.size()];
             output.toArray(result);
             return result;

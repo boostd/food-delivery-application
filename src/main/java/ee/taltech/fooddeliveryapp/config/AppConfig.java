@@ -2,6 +2,7 @@ package ee.taltech.fooddeliveryapp.config;
 
 import ee.taltech.fooddeliveryapp.scheduler.ImportWeatherTask;
 import ee.taltech.fooddeliveryapp.scheduler.Scheduler;
+import ee.taltech.fooddeliveryapp.service.DeliveryFeeCalculator;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
@@ -11,7 +12,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @Configuration
 @EnableScheduling
 @EnableJpaRepositories(basePackages = {"ee.taltech.fooddeliveryapp.database"})
-@ComponentScan(basePackages = {"ee.taltech.fooddeliveryapp.database"})
+@ComponentScan(basePackages = {"ee.taltech.fooddeliveryapp"})
 public class AppConfig {
 
     @Bean
@@ -22,5 +23,10 @@ public class AppConfig {
     @Bean
     public Scheduler scheduler() {
         return new Scheduler();
+    }
+
+    @Bean
+    public DeliveryFeeCalculator deliveryFeeCalculator() {
+        return new DeliveryFeeCalculator();
     }
 }

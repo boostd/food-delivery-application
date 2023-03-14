@@ -31,6 +31,15 @@ public class WeatherData {
     private String weatherPhenomenon;
     private Integer timeStamp;
 
+    /**
+     * Constructs a WeatherData object with all fields but the ID set.
+     * @param stationName Station at which observation was taken
+     * @param wmoCode WMO code of the station
+     * @param airTemperature Air temperature of observation
+     * @param windSpeed Wind speed of observation
+     * @param weatherPhenomenon Any weather phenomena present
+     * @param timeStamp UNIX from the time the observation was taken
+     */
     public WeatherData(String stationName, Integer wmoCode, Double airTemperature, Double windSpeed, String weatherPhenomenon,
                 Integer timeStamp) {
         this.stationName = stationName;
