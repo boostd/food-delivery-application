@@ -29,7 +29,7 @@ public class WeatherData {
     private Double airTemperature;
     private Double windSpeed;
     private String weatherPhenomenon;
-    private Integer timeStamp;
+    private Long timeStamp;
 
     /**
      * Constructs a WeatherData object with all fields but the ID set.
@@ -40,8 +40,8 @@ public class WeatherData {
      * @param weatherPhenomenon Any weather phenomena present
      * @param timeStamp UNIX from the time the observation was taken
      */
-    public WeatherData(String stationName, Integer wmoCode, Double airTemperature, Double windSpeed, String weatherPhenomenon,
-                Integer timeStamp) {
+    public WeatherData(String stationName, Integer wmoCode, Double airTemperature, Double windSpeed,
+                       String weatherPhenomenon, Long timeStamp) {
         this.stationName = stationName;
         this.wmoCode = wmoCode;
         this.airTemperature = airTemperature;

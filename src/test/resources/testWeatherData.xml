@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+            <observations timestamp="1678818585">
+	<station>
+        		<name>Tallinn-Harku</name>
+        		<wmocode>26038</wmocode>
+        		<longitude>24.602891666624284</longitude>
+        		<latitude>59.398122222355134</latitude>
+        		<phenomenon>Overcast</phenomenon>
+        		<visibility>14.0</visibility>
+        		<precipitations>0.3</precipitations>
+        		<airpressure>985</airpressure>
+        		<relativehumidity>96</relativehumidity>
+        		<airtemperature>6</airtemperature>
+        		<winddirection>184</winddirection>
+        		<windspeed>4.3</windspeed>
+        		<windspeedmax>8.4</windspeedmax>
+                <waterlevel></waterlevel>
+                <waterlevel_eh2000></waterlevel_eh2000>
+        		<watertemperature></watertemperature>
+        		<uvindex>0.0</uvindex>
+    </station>
+    <station>
+        		<name>Tartu-Tõravere</name>
+        		<wmocode>26242</wmocode>
+        		<longitude>26.46130555576748</longitude>
+        		<latitude>58.264072222179834</latitude>
+        		<phenomenon>Light shower</phenomenon>
+        		<visibility>15.0</visibility>
+        		<precipitations>0.4</precipitations>
+        		<airpressure>989.8</airpressure>
+        		<relativehumidity>95</relativehumidity>
+        		<airtemperature>5</airtemperature>
+        		<winddirection>188</winddirection>
+        		<windspeed>4</windspeed>
+        		<windspeedmax>6.8</windspeedmax>
+                <waterlevel></waterlevel>
+                <waterlevel_eh2000></waterlevel_eh2000>
+        		<watertemperature></watertemperature>
+        		<uvindex></uvindex>
+        	</station>
+	<station>
+        		<name>Pärnu</name>
+        		<wmocode>41803</wmocode>
+        		<longitude>24.485197221899487</longitude>
+        		<latitude>58.38456666634923</latitude>
+        		<phenomenon></phenomenon>
+        		<visibility>11.0</visibility>
+        		<precipitations>0.2</precipitations>
+        		<airpressure>987.3</airpressure>
+        		<relativehumidity>96</relativehumidity>
+        		<airtemperature>4.3</airtemperature>
+        		<winddirection>157</winddirection>
+        		<windspeed>9.4</windspeed>
+        		<windspeedmax>13.1</windspeedmax>		<waterlevel></waterlevel>		<waterlevel_eh2000>36</waterlevel_eh2000>
+        		<watertemperature>0.2</watertemperature>
+        		<uvindex></uvindex>
+        	</station>
+</observations>

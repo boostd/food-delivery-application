@@ -12,6 +12,7 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 
 import java.io.InputStream;
@@ -27,8 +28,9 @@ public class ImportWeatherTask {
     /**
      * WMO codes of the Tallinn-Harku, Tartu-Tõravere, and Pärnu weather stations respectively.
      */
-    private final ArrayList<Integer> wmoCodeList = new ArrayList<>(Arrays.asList(WMOCodes.TALLINN_HARKU,
-            WMOCodes.TARTU_TORAVERE, WMOCodes.PARNU));
+    private final int tartuCode = WMOCodes.TARTU_TORAVERE;
+    private final int tallinnCode = WMOCodes.TALLINN_HARKU;
+    private final int parnuCode = WMOCodes.PARNU;
     private Document lastXML;
 
     @Autowired
@@ -42,8 +44,16 @@ public class ImportWeatherTask {
      */
     public void updateWeather() {
         Document doc = loadXML();
-        WeatherData[] data = parseXML(doc);
+        updateWeather(doc);
+    }
 
+    /**
+     * Gets an XML file as input. Then parses it and saves WeatherData into the database.
+     * Meant for testing.
+     * @param doc XML file to parse
+     */
+    public void updateWeather(Document doc) {
+        WeatherData[] data = parseXML(doc);
         weatherDataService.saveAllWeatherData(Arrays.asList(data));
     }
 
@@ -82,49 +92,78 @@ public class ImportWeatherTask {
             ArrayList<WeatherData> output = new ArrayList<>();
             XPath xpath = XPathFactory.newInstance().newXPath();
 
-            // Extract the timestamp
-            Integer timeStamp = Integer.parseInt((Optional.of(doc.getDocumentElement().getAttribute("timestamp")))
-                    .orElse("0"));
+            // Extract the timestamp and sanitize it
+            Long timeStamp = Optional.ofNullable(xpath.evaluate("/observations/@timestamp", doc))
+                    .filter(not(String::isEmpty))
+                    .map(Long::parseLong)
+                    .orElse(0L);
+
+            // Create and use an XPath expression on the document
+            String expression = buildXPathExpression();
+            NodeList stations = (NodeList) xpath.evaluate(expression, doc, XPathConstants.NODESET);
 
             // Extract data from each station
-            NodeList stations = (NodeList) xpath.evaluate("//station", doc, XPathConstants.NODESET);
             for (int i = 0; i < stations.getLength(); i++) {
                 Node station = stations.item(i);
-                Integer wmoCode = (Optional.ofNullable(xpath.evaluate("wmocode", station)))
-                        .filter(not(String::isEmpty))
-                        .map(Integer::parseInt)
-                        .orElse(0);
 
-                //Only proceed if current station is one of three were interested in
-                if (!wmoCodeList.contains(wmoCode)) {
-                    continue;
-                }
-
-                String name = Optional.ofNullable(xpath.evaluate("name", station))
-                        .filter(not(String::isEmpty))
-                        .orElse("NaN");
-                String phenomenon = (Optional.of(xpath.evaluate("phenomenon", station)))
-                        .filter(not(String::isEmpty))
-                        .orElse("NaN");
-                Double airTemperature = Optional.of(xpath.evaluate("airtemperature", station))
-                        .filter(not(String::isEmpty))
-                        .map(Double::parseDouble)
-                        .orElse(0.0);
-                Double windSpeed = Optional.of(xpath.evaluate("windspeed", station))
-                        .filter(not(String::isEmpty))
-                        .map(Double::parseDouble)
-                        .orElse(0.0);
-
-                output.add(new WeatherData(name, wmoCode, airTemperature, windSpeed, phenomenon, timeStamp));
+                output.add(createNotEmptyWeatherData(timeStamp, station, xpath));
             }
 
             WeatherData[] result = new WeatherData[output.size()];
             output.toArray(result);
             return result;
 
-        } catch (Exception e) {
+        } catch (XPathExpressionException e) {
             throw new RuntimeException();
         }
+    }
+
+    /**
+     * Dynamically build an XPath expression for stations whose WMO codes we're interested in.
+     * Gets the WMO codes from a constant in WMOCodes class.
+     * @return XPath's expression that parses XML from ilmateenistus.ee
+     */
+    private String buildXPathExpression() {
+        int[] codes = WMOCodes.WMO_CODES;
+        StringBuilder expression = new StringBuilder("/observations/station[wmocode='");
+
+        for (int i = 0; i < codes.length; i++) {
+            expression.append(codes[i]);
+            if (i < codes.length - 1) {
+                expression.append("' or wmocode='");
+            }
+        }
+
+        return expression.append("']").toString();
+    }
+
+    /**
+     * Creates a WeatherData object and makes sure the fields are not empty.
+     * @return WeatherData object from a parsd XML file.
+     */
+    private WeatherData createNotEmptyWeatherData(Long timeStamp, Node station, XPath xpath)
+            throws XPathExpressionException {
+
+        String name = Optional.ofNullable(xpath.evaluate("name", station))
+                .filter(not(String::isEmpty))
+                .orElse("NaN");
+        Integer wmoCode = (Optional.ofNullable(xpath.evaluate("wmocode", station)))
+                .filter(not(String::isEmpty))
+                .map(Integer::parseInt)
+                .orElse(0);
+        String phenomenon = Optional.of(xpath.evaluate("phenomenon", station))
+                .filter(not(String::isEmpty))
+                .orElse("NaN");
+        Double airTemperature = Optional.of(xpath.evaluate("airtemperature", station))
+                .filter(not(String::isEmpty))
+                .map(Double::parseDouble)
+                .orElse(0.0);
+        Double windSpeed = Optional.of(xpath.evaluate("windspeed", station))
+                .filter(not(String::isEmpty))
+                .map(Double::parseDouble)
+                .orElse(0.0);
+
+        return new WeatherData(name, wmoCode, airTemperature, windSpeed, phenomenon, timeStamp);
     }
 
 }

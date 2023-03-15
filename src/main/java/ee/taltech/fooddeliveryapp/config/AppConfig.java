@@ -3,6 +3,7 @@ package ee.taltech.fooddeliveryapp.config;
 import ee.taltech.fooddeliveryapp.scheduler.ImportWeatherTask;
 import ee.taltech.fooddeliveryapp.scheduler.Scheduler;
 import ee.taltech.fooddeliveryapp.service.DeliveryFeeCalculator;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
@@ -21,6 +22,7 @@ public class AppConfig {
     }
 
     @Bean
+    @ConditionalOnProperty(name = "fooddeliveryapp.enableScheduler", havingValue = "true", matchIfMissing = true)
     public Scheduler scheduler() {
         return new Scheduler();
     }
@@ -29,4 +31,5 @@ public class AppConfig {
     public DeliveryFeeCalculator deliveryFeeCalculator() {
         return new DeliveryFeeCalculator();
     }
+
 }

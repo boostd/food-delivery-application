@@ -34,4 +34,11 @@ public class WeatherDataService {
     public void saveWeatherData(WeatherData weatherData) {
         weatherDataRepository.save(weatherData);
     }
+
+    /**
+     * Clears all entries of WeatherData.
+     */
+    public void clearAllWeatherData() {
+        weatherDataRepository.deleteAll();
+    }
 }

@@ -1,47 +1,35 @@
 package ee.taltech.fooddeliveryapp.service;
 
-import ee.taltech.fooddeliveryapp.common.WMOCodes;
+import ee.taltech.fooddeliveryapp.common.DeliveryData;
 import ee.taltech.fooddeliveryapp.database.WeatherData;
 import ee.taltech.fooddeliveryapp.database.WeatherDataService;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Optional;
 
 public class DeliveryFeeCalculator {
     @Autowired
     WeatherDataService weatherDataService;
 
-    private final HashMap<String, BigDecimal> cityFees = new HashMap<>() {{
-        put("tallinn", BigDecimal.ONE);
-        put("tartu", new BigDecimal("0.5"));
-        put("pärnu", BigDecimal.ZERO);
-    }};
-    private final HashMap<String, BigDecimal> vehicleFees = new HashMap<>() {{
-        put("car", BigDecimal.ONE);
-        put("scooter", new BigDecimal("0.5"));
-        put("bike", BigDecimal.ZERO);
-    }};
-    private final HashMap<String, Integer> wmoCodes = new HashMap<>() {{
-        put("tallinn", WMOCodes.TALLINN_HARKU);
-        put("tartu-tõravere", WMOCodes.TARTU_TORAVERE);
-        put("pärnu", WMOCodes.PARNU);
-    }};
-    private final ArrayList<String> cityList = new ArrayList<>(Arrays.asList("tallinn", "tartu", "pärnu"));
-    private final ArrayList<String> vehicleTypeList = new ArrayList<>(Arrays.asList("car", "scooter", "bike"));
-
-
+    /**
+     * Calculates the delivery fee based on the current weather, the city selected, and the vehicle selected.
+     * @param city City to base the calculations off
+     * @param vehicleType Vehicle to base the calculations off
+     * @return Calculated fee. Returned as a BigDecimal as numbers must be accurate with money.
+     * @throws UnknownCityException Thrown when the city isn't Tallinn, Tartu, or Pärnu
+     * @throws UnknownVehicleException Thrown when the vehicle isn't a car, a scooter, or a bike
+     * @throws NoWeatherFoundException Thrown when can't find any entries in the database for weather in the city
+     * @throws VehicleForbiddenException Thrown when it is forbidden to deliver food with selected vehicle
+     */
     public BigDecimal calculateFee(String city, String vehicleType)
             throws UnknownCityException, UnknownVehicleException, NoWeatherFoundException, VehicleForbiddenException {
         city = city.toLowerCase();
         vehicleType = vehicleType.toLowerCase();
 
-        if (!cityList.contains(city)) {
+        if (!DeliveryData.CITY_LIST.contains(city)) {
             throw new UnknownCityException("No such city found!");
-        } else if (!vehicleTypeList.contains(vehicleType)) {
+        } else if (!DeliveryData.VEHICLE_TYPE_LIST.contains(vehicleType)) {
             throw new UnknownVehicleException("No such vehicle found!");
         }
 
@@ -51,11 +39,27 @@ public class DeliveryFeeCalculator {
         return baseFee.add(weatherFee);
     }
 
+    /**
+     * Calculates the base fee from the selected city and selected vehicle type. Gets monetary values from the
+     * DeliveryData class.
+     * @param city Selected city
+     * @param vehicleType Selected vehicle type
+     * @return Calculated base fee according to business rules.
+     */
     private BigDecimal calculateBaseFee(String city, String vehicleType) {
         BigDecimal fee = new BigDecimal("2.0");
-        return fee.add(cityFees.get(city)).add(vehicleFees.get(vehicleType));
+        return fee.add(DeliveryData.CITY_FEES.get(city)).add(DeliveryData.
+                VEHICLE_FEES.get(vehicleType));
     }
 
+    /**
+     * Calculates the additional weather fee according to current weather conditions in the selected city.
+     * @param city Selected city
+     * @param vehicleType Selected vehicle type
+     * @return Additional weather fee according to current weather conditions.
+     * @throws NoWeatherFoundException No weather for the current city was found in the database.
+     * @throws VehicleForbiddenException According to business rules it is forbidden to use the selected vehicle
+     */
     private BigDecimal calculateWeatherFee(String city, String vehicleType)
             throws NoWeatherFoundException, VehicleForbiddenException {
         WeatherData data;
@@ -93,7 +97,7 @@ public class DeliveryFeeCalculator {
         if (airTemperature < 0 && airTemperature >= -10) {
             return new BigDecimal("0.5");
         } else if (airTemperature < -10) {
-            return new BigDecimal("1.0");
+            return BigDecimal.ONE;
         }
 
         return BigDecimal.ZERO;
@@ -134,7 +138,7 @@ public class DeliveryFeeCalculator {
 
     private WeatherData fetchWeatherData(String city) throws NoWeatherFoundException {
         Optional<WeatherData> weatherDataOptional = Optional.ofNullable(weatherDataService.
-                getLatestWeatherData(wmoCodes.get(city)));
+                getLatestWeatherData(DeliveryData.WMO_CODES.get(city)));
 
         if (weatherDataOptional.isEmpty()) {
             throw new NoWeatherFoundException("No weather for " + city + " found in database!");
