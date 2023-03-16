@@ -1,19 +1,19 @@
 package ee.taltech.fooddeliveryapp.service;
 
-import ee.taltech.fooddeliveryapp.database.WeatherDataService;
 import ee.taltech.fooddeliveryapp.scheduler.ImportWeatherTask;
-import org.junit.jupiter.api.Test;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.core.io.Resource;
 import org.springframework.test.context.TestPropertySource;
-import org.w3c.dom.Document;
+import org.springframework.core.io.Resource;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.InputStream;
+import org.w3c.dom.Document;
 
+import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @SpringBootTest

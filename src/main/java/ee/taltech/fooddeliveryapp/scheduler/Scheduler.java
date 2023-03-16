@@ -6,16 +6,22 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.concurrent.ConcurrentTaskScheduler;
 import org.springframework.scheduling.support.CronTrigger;
+import org.springframework.stereotype.Component;
 
 import java.util.concurrent.ScheduledFuture;
 
+@Component
 public class Scheduler implements Runnable {
 
     @SuppressWarnings("rawtypes")
     private ScheduledFuture scheduledFuture;
     private TaskScheduler taskScheduler;
+    private final ImportWeatherTask task;
+
     @Autowired
-    private ImportWeatherTask task;
+    Scheduler(ImportWeatherTask task) {
+        this.task = task;
+    }
 
 
     /**

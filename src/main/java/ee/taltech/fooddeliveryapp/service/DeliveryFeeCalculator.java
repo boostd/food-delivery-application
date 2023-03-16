@@ -1,19 +1,35 @@
 package ee.taltech.fooddeliveryapp.service;
 
-import ee.taltech.fooddeliveryapp.common.DeliveryData;
+import ee.taltech.fooddeliveryapp.config.DeliveryData;
 import ee.taltech.fooddeliveryapp.database.WeatherData;
-import ee.taltech.fooddeliveryapp.database.WeatherDataService;
+import ee.taltech.fooddeliveryapp.exceptions.InvalidTimeStampException;
+import ee.taltech.fooddeliveryapp.exceptions.NoWeatherFoundException;
+import ee.taltech.fooddeliveryapp.exceptions.UnknownCityException;
+import ee.taltech.fooddeliveryapp.exceptions.UnknownVehicleException;
+import ee.taltech.fooddeliveryapp.exceptions.VehicleForbiddenException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.sql.Timestamp;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 
+@Service
 public class DeliveryFeeCalculator {
+    private final WeatherDataService weatherDataService;
+
     @Autowired
-    WeatherDataService weatherDataService;
+    public DeliveryFeeCalculator(WeatherDataService weatherDataService) {
+        this.weatherDataService = weatherDataService;
+    }
 
     /**
      * Calculates the delivery fee based on the current weather, the city selected, and the vehicle selected.
+     *
      * @param city City to base the calculations off
      * @param vehicleType Vehicle to base the calculations off
      * @return Calculated fee. Returned as a BigDecimal as numbers must be accurate with money.
@@ -21,9 +37,11 @@ public class DeliveryFeeCalculator {
      * @throws UnknownVehicleException Thrown when the vehicle isn't a car, a scooter, or a bike
      * @throws NoWeatherFoundException Thrown when can't find any entries in the database for weather in the city
      * @throws VehicleForbiddenException Thrown when it is forbidden to deliver food with selected vehicle
+     * @throws InvalidTimeStampException WeatherData is not valid for the targeted time
      */
-    public BigDecimal calculateFee(String city, String vehicleType)
-            throws UnknownCityException, UnknownVehicleException, NoWeatherFoundException, VehicleForbiddenException {
+    public BigDecimal calculateFee(String city, String vehicleType, LocalDateTime timeStamp)
+            throws UnknownCityException, UnknownVehicleException, VehicleForbiddenException,
+            NoWeatherFoundException, InvalidTimeStampException {
         city = city.toLowerCase();
         vehicleType = vehicleType.toLowerCase();
 
@@ -33,15 +51,17 @@ public class DeliveryFeeCalculator {
             throw new UnknownVehicleException("No such vehicle found!");
         }
 
+        Long UNIXTimeStamp = parseTimeToLong(timeStamp);
         BigDecimal baseFee = calculateBaseFee(city, vehicleType);
-        BigDecimal weatherFee = calculateWeatherFee(city, vehicleType);
+        BigDecimal weatherFee = calculateWeatherFee(city, vehicleType, UNIXTimeStamp);
 
         return baseFee.add(weatherFee);
     }
 
     /**
-     * Calculates the base fee from the selected city and selected vehicle type. Gets monetary values from the
-     * DeliveryData class.
+     * Calculates the base fee from the selected city and selected vehicle type.
+     * Gets monetary values from the DeliveryData class.
+     *
      * @param city Selected city
      * @param vehicleType Selected vehicle type
      * @return Calculated base fee according to business rules.
@@ -54,37 +74,32 @@ public class DeliveryFeeCalculator {
 
     /**
      * Calculates the additional weather fee according to current weather conditions in the selected city.
+     *
      * @param city Selected city
      * @param vehicleType Selected vehicle type
      * @return Additional weather fee according to current weather conditions.
      * @throws NoWeatherFoundException No weather for the current city was found in the database.
      * @throws VehicleForbiddenException According to business rules it is forbidden to use the selected vehicle
+     * @throws InvalidTimeStampException WeatherData is not valid for the targeted time
      */
-    private BigDecimal calculateWeatherFee(String city, String vehicleType)
-            throws NoWeatherFoundException, VehicleForbiddenException {
+    private BigDecimal calculateWeatherFee(String city, String vehicleType, Long timeStamp)
+            throws NoWeatherFoundException, InvalidTimeStampException, VehicleForbiddenException {
         WeatherData data;
 
-        try {
+        // If the timestamp is null, then fetch the latest weather data
+        if (timeStamp != null) {
+            data = fetchWeatherData(city, timeStamp);
+        } else {
             data = fetchWeatherData(city);
-        } catch (NoWeatherFoundException e) {
-            throw e;
         }
 
         Double airTemperature = data.getAirTemperature();
         Double windSpeed = data.getWindSpeed();
         String phenomenon = data.getWeatherPhenomenon();
 
-        BigDecimal airTemperatureFee;
-        BigDecimal windSpeedFee;
-        BigDecimal phenomenonFee;
-
-        try {
-            airTemperatureFee = calculateAirTemperatureFee(vehicleType, airTemperature);
-            windSpeedFee = calculateWindSpeedFee(vehicleType, windSpeed);
-            phenomenonFee = calculatePhenomenonFee(vehicleType, phenomenon);
-        } catch (VehicleForbiddenException e) {
-            throw e;
-        }
+        BigDecimal airTemperatureFee = calculateAirTemperatureFee(vehicleType, airTemperature);
+        BigDecimal windSpeedFee = calculateWindSpeedFee(vehicleType, windSpeed);
+        BigDecimal phenomenonFee = calculatePhenomenonFee(vehicleType, phenomenon);
 
         return airTemperatureFee.add(windSpeedFee).add(phenomenonFee);
     }
@@ -136,15 +151,105 @@ public class DeliveryFeeCalculator {
         return BigDecimal.ZERO;
     }
 
+    /**
+     * Fetches weather data for the selected city for the specified timestamp and validates the timestamp against the fetched data.
+     *
+     * @param city the name of the city to fetch the weather data for
+     * @param timeStamp the Unix timestamp to fetch the weather data for
+     * @return WeatherData for the specified city and timestamp
+     * @throws InvalidTimeStampException WeatherData is not valid for the targeted time
+     */
+    private WeatherData fetchWeatherData(String city, Long timeStamp) throws InvalidTimeStampException {
+        Optional<WeatherData> weatherDataOptional = Optional.ofNullable(weatherDataService
+                .getWeatherDataByTimeStamp(DeliveryData.WMO_CODES.get(city), timeStamp));
+
+        if (weatherDataOptional.isEmpty()) {
+            throw new InvalidTimeStampException("No weather for " + city + " for requested time found in database!");
+        }
+
+        WeatherData weatherData = weatherDataOptional.get();
+
+        // If the fetched weather data was not valid at timeStamp time, throws InvalidTimeStampException
+        if (!validateWeatherDataTime(timeStamp, weatherData.getTimeStamp())) {
+            throw new InvalidTimeStampException("No weather for " + city + " for requested time found in database!");
+        }
+
+        return weatherDataOptional.get();
+    }
+
+    /**
+     * Fetches the latest weather data for selected city.
+     *
+     * @param city City to fetch the weather for.
+     * @return The latest WeatherData for selected city
+     * @throws NoWeatherFoundException No weather for selected city was found in the database
+     */
     private WeatherData fetchWeatherData(String city) throws NoWeatherFoundException {
-        Optional<WeatherData> weatherDataOptional = Optional.ofNullable(weatherDataService.
-                getLatestWeatherData(DeliveryData.WMO_CODES.get(city)));
+        Optional<WeatherData> weatherDataOptional = Optional.ofNullable(weatherDataService
+                .getLatestWeatherData(DeliveryData.WMO_CODES.get(city)));
 
         if (weatherDataOptional.isEmpty()) {
             throw new NoWeatherFoundException("No weather for " + city + " found in database!");
         }
 
         return weatherDataOptional.get();
+    }
+
+    /**
+     * Parses the LocalDateTime to a UNIX timestamp formatted as a long. Returns null if LocalDateTime is null
+     *
+     * @param timeStamp LocalDateTime timestamp to convert
+     * @return Parsed UNIX timestamp or null
+     */
+    private Long parseTimeToLong(LocalDateTime timeStamp) {
+        long output;
+        try {
+            output = Timestamp.valueOf(timeStamp).getTime();
+        } catch (NullPointerException e) {
+            return null;
+        }
+
+        return output;
+    }
+
+    /**
+     * Validates whether the actual WeatherData timestamp is within the range
+     * of the closest previous and next HH:15:00 timestamps.
+     *
+     * @param targetTimeStamp The target Unix timestamp to validate against
+     * @param actualTimeStamp The actual WeatherData Unix timestamp to validate
+     * @return True if the actual timestamp is within the range of the closest previous and next HH:15:00 timestamps
+     */
+    private boolean validateWeatherDataTime(Long targetTimeStamp, Long actualTimeStamp) {
+        long[] checkTimeStamps = findClosestTimeStamps(actualTimeStamp);
+
+        return checkTimeStamps[0] <= targetTimeStamp && targetTimeStamp <= checkTimeStamps[1];
+    }
+
+    /**
+     * Finds the Unix timestamps for the closest previous and next HH:15:00 time to the given Unix timestamp.
+     *
+     * @param unixTimeStamp the Unix timestamp for which to find the closest HH:15:00 times
+     * @return an array containing the Unix timestamps for the closest previous and next HH:15:00 times
+     */
+    private long[] findClosestTimeStamps(long unixTimeStamp) {
+        LocalDateTime dateTime = Instant.ofEpochSecond(unixTimeStamp).atZone(ZoneId.systemDefault()).toLocalDateTime();
+
+        // Find the previous HH:15:00
+        LocalDateTime previousDateTime = dateTime.truncatedTo(ChronoUnit.HOURS).plusMinutes(15);
+        if (previousDateTime.isAfter(dateTime)) {
+            previousDateTime = previousDateTime.minusHours(1);
+        }
+
+        // Find the next HH:15:00
+        LocalDateTime nextDateTime = previousDateTime.plusHours(1);
+
+        // Convert LocalDateTime back to Unix timestamps
+        long previousUnixTimestamp = previousDateTime.atZone(ZoneId.systemDefault()).toEpochSecond();
+        long nextUnixTimestamp = nextDateTime.atZone(ZoneId.systemDefault()).toEpochSecond();
+
+        // Return an array containing the previous and next Unix timestamps
+        return new long[]{previousUnixTimestamp, nextUnixTimestamp};
     }
 
 }

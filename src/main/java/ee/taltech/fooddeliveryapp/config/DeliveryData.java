@@ -1,4 +1,4 @@
-package ee.taltech.fooddeliveryapp.common;
+package ee.taltech.fooddeliveryapp.config;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -20,9 +20,9 @@ public class DeliveryData {
         put("bike", BigDecimal.ZERO);
     }};
     public static final HashMap<String, Integer> WMO_CODES = new HashMap<>() {{
-        put("tallinn", WMOCodes.TALLINN_HARKU);
-        put("tartu", WMOCodes.TARTU_TORAVERE);
-        put("pärnu", WMOCodes.PARNU);
+        put("tallinn", WeatherDataConstants.TALLINN_HARKU);
+        put("tartu", WeatherDataConstants.TARTU_TORAVERE);
+        put("pärnu", WeatherDataConstants.PARNU);
     }};
     public static final ArrayList<String> CITY_LIST = new ArrayList<>(Arrays.asList("tallinn", "tartu", "pärnu"));
     public static final ArrayList<String> VEHICLE_TYPE_LIST = new ArrayList<>(Arrays.asList("car", "scooter", "bike"));

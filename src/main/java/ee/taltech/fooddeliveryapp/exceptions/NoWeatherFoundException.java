@@ -1,14 +1,14 @@
-package ee.taltech.fooddeliveryapp.service;
+package ee.taltech.fooddeliveryapp.exceptions;
 
 public class NoWeatherFoundException extends Throwable {
     private final String message;
     private final Throwable cause;
 
-    NoWeatherFoundException(String message) {
+    public NoWeatherFoundException(String message) {
         this(message, null);
     }
 
-    NoWeatherFoundException(String message, Throwable cause) {
+    public NoWeatherFoundException(String message, Throwable cause) {
         this.message = message;
         this.cause = cause;
     }

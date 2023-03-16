@@ -1,14 +1,14 @@
-package ee.taltech.fooddeliveryapp.service;
+package ee.taltech.fooddeliveryapp.exceptions;
 
-public class VehicleForbiddenException extends Throwable {
+public class UnknownCityException extends Throwable {
     private final String message;
     private final Throwable cause;
 
-    VehicleForbiddenException(String message) {
+    public UnknownCityException(String message) {
         this(message, null);
     }
 
-    VehicleForbiddenException(String message, Throwable cause) {
+    public UnknownCityException(String message, Throwable cause) {
         this.message = message;
         this.cause = cause;
     }

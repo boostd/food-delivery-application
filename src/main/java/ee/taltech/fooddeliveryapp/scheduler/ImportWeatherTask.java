@@ -1,9 +1,10 @@
 package ee.taltech.fooddeliveryapp.scheduler;
 
-import ee.taltech.fooddeliveryapp.common.WMOCodes;
+import ee.taltech.fooddeliveryapp.config.WeatherDataConstants;
 import ee.taltech.fooddeliveryapp.database.WeatherData;
-import ee.taltech.fooddeliveryapp.database.WeatherDataService;
+import ee.taltech.fooddeliveryapp.service.WeatherDataService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -23,18 +24,16 @@ import java.util.Optional;
 
 import static java.util.function.Predicate.not;
 
+@Component
 public class ImportWeatherTask {
 
-    /**
-     * WMO codes of the Tallinn-Harku, Tartu-Tõravere, and Pärnu weather stations respectively.
-     */
-    private final int tartuCode = WMOCodes.TARTU_TORAVERE;
-    private final int tallinnCode = WMOCodes.TALLINN_HARKU;
-    private final int parnuCode = WMOCodes.PARNU;
     private Document lastXML;
+    private final WeatherDataService weatherDataService;
 
     @Autowired
-    WeatherDataService weatherDataService;
+    public ImportWeatherTask(WeatherDataService weatherDataService) {
+        this.weatherDataService = weatherDataService;
+    }
 
     /**
      * Gets an XML file from
@@ -65,7 +64,7 @@ public class ImportWeatherTask {
         try {
             DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
 
-            URL url = new URL("https://www.ilmateenistus.ee/ilma_andmed/xml/observations.php");
+            URL url = new URL(WeatherDataConstants.WEATHER_SERVICE);
             InputStream stream = url.openStream();
             Document doc = builder.parse(stream);
             doc.getDocumentElement().normalize();
@@ -124,7 +123,7 @@ public class ImportWeatherTask {
      * @return XPath's expression that parses XML from ilmateenistus.ee
      */
     private String buildXPathExpression() {
-        int[] codes = WMOCodes.WMO_CODES;
+        int[] codes = WeatherDataConstants.WMO_CODES;
         StringBuilder expression = new StringBuilder("/observations/station[wmocode='");
 
         for (int i = 0; i < codes.length; i++) {
