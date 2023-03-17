@@ -1,5 +1,8 @@
 package ee.taltech.fooddeliveryapp.exceptions;
 
+/**
+ * Thrown when a request is made, but the weather conditions forbid delivery with selected vehicle.
+ */
 public class VehicleForbiddenException extends Throwable {
     private final String message;
     private final Throwable cause;

@@ -1,5 +1,8 @@
 package ee.taltech.fooddeliveryapp.exceptions;
 
+/**
+ * Thrown when the database contains no valid weather data.
+ */
 public class NoWeatherFoundException extends Throwable {
     private final String message;
     private final Throwable cause;

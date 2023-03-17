@@ -1,5 +1,8 @@
 package ee.taltech.fooddeliveryapp.exceptions;
 
+/**
+ * Thrown when no valid weather data was found for the selected timestamp.
+ */
 public class InvalidTimeStampException extends Throwable {
     private final String message;
     private final Throwable cause;

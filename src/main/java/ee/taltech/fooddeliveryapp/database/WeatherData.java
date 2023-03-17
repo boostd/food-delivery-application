@@ -10,6 +10,8 @@ import lombok.NoArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.Objects;
+
 /**
  * Holds data about a weather observation made at a weather station.
  */
@@ -33,6 +35,7 @@ public class WeatherData {
 
     /**
      * Constructs a WeatherData object with all fields but the ID set.
+     *
      * @param stationName Station at which observation was taken
      * @param wmoCode WMO code of the station
      * @param airTemperature Air temperature of observation
@@ -48,5 +51,24 @@ public class WeatherData {
         this.windSpeed = windSpeed;
         this.weatherPhenomenon = weatherPhenomenon;
         this.timeStamp = timeStamp;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        WeatherData that = (WeatherData) o;
+        return Objects.equals(id, that.id) &&
+                Objects.equals(stationName, that.stationName) &&
+                Objects.equals(wmoCode, that.wmoCode) &&
+                Objects.equals(airTemperature, that.airTemperature) &&
+                Objects.equals(windSpeed, that.windSpeed) &&
+                Objects.equals(weatherPhenomenon, that.weatherPhenomenon) &&
+                Objects.equals(timeStamp, that.timeStamp);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, stationName, wmoCode, airTemperature, windSpeed, weatherPhenomenon, timeStamp);
     }
 }

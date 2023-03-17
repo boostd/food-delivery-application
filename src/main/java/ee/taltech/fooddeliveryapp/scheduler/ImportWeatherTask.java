@@ -3,6 +3,8 @@ package ee.taltech.fooddeliveryapp.scheduler;
 import ee.taltech.fooddeliveryapp.config.WeatherDataConstants;
 import ee.taltech.fooddeliveryapp.database.WeatherData;
 import ee.taltech.fooddeliveryapp.service.WeatherDataService;
+import lombok.Getter;
+import lombok.Setter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.w3c.dom.Document;
@@ -24,6 +26,8 @@ import java.util.Optional;
 
 import static java.util.function.Predicate.not;
 
+@Getter
+@Setter
 @Component
 public class ImportWeatherTask {
 
@@ -48,7 +52,8 @@ public class ImportWeatherTask {
 
     /**
      * Gets an XML file as input. Then parses it and saves WeatherData into the database.
-     * Meant for testing.
+     * Meant for testing as you can pass in a file as input.
+     *
      * @param doc XML file to parse
      */
     public void updateWeather(Document doc) {
@@ -58,6 +63,7 @@ public class ImportWeatherTask {
 
     /**
      * Gets the XML file of weather data from ilmateenistus.ee and returns it as a Document.
+     *
      * @return Current weather data as a Document.
      */
     private Document loadXML() {
@@ -83,6 +89,7 @@ public class ImportWeatherTask {
     /**
      * Loops over the Document and finds the required stations. Checks if values are empty in which case assigns
      * default values. Instantiates WeatherData objects and returns them as an array.
+     *
      * @param doc XML Document containing the current weather data.
      * @return WeatherData array from Tallinn-Harku, Tartu-Tõravere, and Pärnu weather stations.
      */
@@ -120,6 +127,7 @@ public class ImportWeatherTask {
     /**
      * Dynamically build an XPath expression for stations whose WMO codes we're interested in.
      * Gets the WMO codes from a constant in WMOCodes class.
+     *
      * @return XPath's expression that parses XML from ilmateenistus.ee
      */
     private String buildXPathExpression() {
@@ -138,6 +146,7 @@ public class ImportWeatherTask {
 
     /**
      * Creates a WeatherData object and makes sure the fields are not empty.
+     *
      * @return WeatherData object from a parsd XML file.
      */
     private WeatherData createNotEmptyWeatherData(Long timeStamp, Node station, XPath xpath)

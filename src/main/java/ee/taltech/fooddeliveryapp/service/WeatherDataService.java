@@ -9,20 +9,26 @@ import java.util.List;
 
 @Service
 public class WeatherDataService {
+    private final WeatherDataRepository weatherDataRepository;
+
     @Autowired
-    private WeatherDataRepository weatherDataRepository;
+    public WeatherDataService(WeatherDataRepository weatherDataRepository) {
+        this.weatherDataRepository = weatherDataRepository;
+    }
 
     /**
      * Returns the latest weather data for the selected city (by WMO code)
+     *
      * @param wmoCode WMO code of the city to search
      * @return Latest weather data for the city
      */
     public WeatherData getLatestWeatherData(Integer wmoCode) {
-        return weatherDataRepository.findByWmoCodeOrderByTimeStampDesc(wmoCode);
+        return weatherDataRepository.findFirstByWmoCodeOrderByTimeStampDesc(wmoCode);
     }
 
     /**
      * Save all WeatherData objects from the list into the in memory H2 database
+     *
      * @param weatherDataList WeatherData list to save
      */
     public void saveAllWeatherData(List<WeatherData> weatherDataList) {
@@ -37,16 +43,15 @@ public class WeatherDataService {
     }
 
     /**
-     * Fetches the weather data for a selected city (by WMO code). Returns the closest possible valid weather
-     * for the selected time. The returned WeatherData should be checked if it is valid, as if an observation from
-     * the target time was not stored in the database then the response might be an entry too early or too late.
+     * Fetches the weather data for a selected city (by WMO code).
+     * Returns valid weather for the selected time range.
      *
      * @param wmoCode WMO code of the weather station
-     * @param targetTimeStamp Targeted UNIX time for the WeatherData entry
+     * @param start Targeted UNIX time for the start of the range
+     * @param end Targeted UNIX time for the end of the range
      * @return Closest WeatherData entry to the targeted time
      */
-    public WeatherData getWeatherDataByTimeStamp(Integer wmoCode, long targetTimeStamp) {
-        return weatherDataRepository.findFirstByWmoCodeAndTimeStampLessThanEqualOrderByTimeStampDesc
-                (wmoCode, targetTimeStamp);
+    public List<WeatherData> getWeatherDataByTimeStamp(Integer wmoCode, long start, long end) {
+        return weatherDataRepository.findByWmoCodeAndTimeStampBetweenOrderByTimeStampDesc(wmoCode, start, end);
     }
 }

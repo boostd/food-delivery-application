@@ -1,5 +1,8 @@
 package ee.taltech.fooddeliveryapp.exceptions;
 
+/**
+ * Thrown when a request is made for an unknown vehicle.
+ */
 public class UnknownVehicleException extends Throwable {
     private final String message;
     private final Throwable cause;

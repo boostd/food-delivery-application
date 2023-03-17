@@ -6,7 +6,7 @@ plugins {
 }
 
 group = 'ee.taltech'
-version = '0.0.1-SNAPSHOT'
+version = '1.0'
 sourceCompatibility = '17'
 
 repositories {
@@ -27,4 +27,5 @@ dependencies {
 
 test {
     useJUnitPlatform()
+    systemProperty "spring.profiles.active", "test"
 }

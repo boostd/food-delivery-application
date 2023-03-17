@@ -52,7 +52,9 @@
         		<airtemperature>4.3</airtemperature>
         		<winddirection>157</winddirection>
         		<windspeed>9.4</windspeed>
-        		<windspeedmax>13.1</windspeedmax>		<waterlevel></waterlevel>		<waterlevel_eh2000>36</waterlevel_eh2000>
+        		<windspeedmax>13.1</windspeedmax>
+				<waterlevel></waterlevel>
+				<waterlevel_eh2000>36</waterlevel_eh2000>
         		<watertemperature>0.2</watertemperature>
         		<uvindex></uvindex>
         	</station>

@@ -7,6 +7,7 @@ import ee.taltech.fooddeliveryapp.exceptions.UnknownCityException;
 import ee.taltech.fooddeliveryapp.exceptions.UnknownVehicleException;
 import ee.taltech.fooddeliveryapp.exceptions.VehicleForbiddenException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -28,6 +29,12 @@ public class DeliveryFeeController {
         this.response = response;
     }
 
+    /**
+     * This method calculates the delivery fee based on the provided FeeRequest object and returns a FeeResponse object.
+     *
+     * @param request FeeRequest object containing the city, vehicle type, and timestamp information for the delivery
+     * @return a ResponseEntity containing the calculated delivery fee and an error message if an error occurs
+     */
     @PostMapping("/fee")
     public ResponseEntity<FeeResponse> calculateFee(@RequestBody FeeRequest request) {
         try {
@@ -50,12 +57,12 @@ public class DeliveryFeeController {
             return ResponseEntity.badRequest().body(response);
         } catch (InvalidTimeStampException e) {
             response.setFee(null);
-            response.setErrorMessage("Invalid timestamp: " + e.getMessage());
-            return ResponseEntity.badRequest().body(response);
+            response.setErrorMessage("No valid weather data for selected time for city: " + request.getCity());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
         } catch (NoWeatherFoundException e) {
             response.setFee(null);
             response.setErrorMessage("Database contains no weather data for city: " + request.getCity());
-            return ResponseEntity.internalServerError().body(response);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
         } catch (Exception e) {
             response.setFee(null);
             response.setErrorMessage("An unexpected error occurred");

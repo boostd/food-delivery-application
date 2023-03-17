@@ -8,7 +8,7 @@ import java.util.HashMap;
 /**
  * Holds constants of business rules used for calculating the delivery fee.
  */
-public class DeliveryData {
+public class DeliveryDataConstants {
     public static final HashMap<String, BigDecimal> CITY_FEES = new HashMap<>() {{
         put("tallinn", BigDecimal.ONE);
         put("tartu", new BigDecimal("0.5"));

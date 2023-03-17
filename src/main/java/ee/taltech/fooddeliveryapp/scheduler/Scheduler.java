@@ -2,6 +2,8 @@ package ee.taltech.fooddeliveryapp.scheduler;
 
 import jakarta.annotation.PostConstruct;
 
+import lombok.Getter;
+import lombok.Setter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.concurrent.ConcurrentTaskScheduler;
@@ -10,6 +12,8 @@ import org.springframework.stereotype.Component;
 
 import java.util.concurrent.ScheduledFuture;
 
+@Getter
+@Setter
 @Component
 public class Scheduler implements Runnable {
 
@@ -27,6 +31,7 @@ public class Scheduler implements Runnable {
     /**
      * This method kills the previous scheduler if it exists and creates a new scheduler with given cron expression.
      * In other words this method is used to reschedule the timing of the request for weather data.
+     *
      * @param cronExpressionStr New cron expression to create schedule with
      */
     public void reSchedule(String cronExpressionStr) {

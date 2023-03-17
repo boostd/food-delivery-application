@@ -1,6 +1,6 @@
 package ee.taltech.fooddeliveryapp.service;
 
-import ee.taltech.fooddeliveryapp.config.DeliveryData;
+import ee.taltech.fooddeliveryapp.config.DeliveryDataConstants;
 import ee.taltech.fooddeliveryapp.database.WeatherData;
 import ee.taltech.fooddeliveryapp.exceptions.InvalidTimeStampException;
 import ee.taltech.fooddeliveryapp.exceptions.NoWeatherFoundException;
@@ -16,6 +16,7 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -45,9 +46,9 @@ public class DeliveryFeeCalculator {
         city = city.toLowerCase();
         vehicleType = vehicleType.toLowerCase();
 
-        if (!DeliveryData.CITY_LIST.contains(city)) {
+        if (!DeliveryDataConstants.CITY_LIST.contains(city)) {
             throw new UnknownCityException("No such city found!");
-        } else if (!DeliveryData.VEHICLE_TYPE_LIST.contains(vehicleType)) {
+        } else if (!DeliveryDataConstants.VEHICLE_TYPE_LIST.contains(vehicleType)) {
             throw new UnknownVehicleException("No such vehicle found!");
         }
 
@@ -68,7 +69,7 @@ public class DeliveryFeeCalculator {
      */
     private BigDecimal calculateBaseFee(String city, String vehicleType) {
         BigDecimal fee = new BigDecimal("2.0");
-        return fee.add(DeliveryData.CITY_FEES.get(city)).add(DeliveryData.
+        return fee.add(DeliveryDataConstants.CITY_FEES.get(city)).add(DeliveryDataConstants.
                 VEHICLE_FEES.get(vehicleType));
     }
 
@@ -152,7 +153,8 @@ public class DeliveryFeeCalculator {
     }
 
     /**
-     * Fetches weather data for the selected city for the specified timestamp and validates the timestamp against the fetched data.
+     * Fetches weather data for the selected city for the specified timestamp from the valid range for that timestamp.
+     * Example: time of 10:45:32 would yield the latest WeatherData from the range 10:15:00 to 11:15:00
      *
      * @param city the name of the city to fetch the weather data for
      * @param timeStamp the Unix timestamp to fetch the weather data for
@@ -160,21 +162,19 @@ public class DeliveryFeeCalculator {
      * @throws InvalidTimeStampException WeatherData is not valid for the targeted time
      */
     private WeatherData fetchWeatherData(String city, Long timeStamp) throws InvalidTimeStampException {
-        Optional<WeatherData> weatherDataOptional = Optional.ofNullable(weatherDataService
-                .getWeatherDataByTimeStamp(DeliveryData.WMO_CODES.get(city), timeStamp));
+        long[] range = findClosestTimeStamps(timeStamp);
+        Optional<List<WeatherData>> weatherDataOptional = Optional.ofNullable(weatherDataService
+                .getWeatherDataByTimeStamp(DeliveryDataConstants.WMO_CODES.get(city), range[0], range[1]));
 
         if (weatherDataOptional.isEmpty()) {
             throw new InvalidTimeStampException("No weather for " + city + " for requested time found in database!");
-        }
-
-        WeatherData weatherData = weatherDataOptional.get();
-
-        // If the fetched weather data was not valid at timeStamp time, throws InvalidTimeStampException
-        if (!validateWeatherDataTime(timeStamp, weatherData.getTimeStamp())) {
+        } else if (weatherDataOptional.get().isEmpty()) {
             throw new InvalidTimeStampException("No weather for " + city + " for requested time found in database!");
         }
 
-        return weatherDataOptional.get();
+        List<WeatherData> weatherDataList = weatherDataOptional.get();
+
+        return weatherDataList.get(weatherDataList.size() - 1);
     }
 
     /**
@@ -186,7 +186,7 @@ public class DeliveryFeeCalculator {
      */
     private WeatherData fetchWeatherData(String city) throws NoWeatherFoundException {
         Optional<WeatherData> weatherDataOptional = Optional.ofNullable(weatherDataService
-                .getLatestWeatherData(DeliveryData.WMO_CODES.get(city)));
+                .getLatestWeatherData(DeliveryDataConstants.WMO_CODES.get(city)));
 
         if (weatherDataOptional.isEmpty()) {
             throw new NoWeatherFoundException("No weather for " + city + " found in database!");
@@ -204,26 +204,12 @@ public class DeliveryFeeCalculator {
     private Long parseTimeToLong(LocalDateTime timeStamp) {
         long output;
         try {
-            output = Timestamp.valueOf(timeStamp).getTime();
+            output = Timestamp.valueOf(timeStamp).getTime() / 1000;
         } catch (NullPointerException e) {
             return null;
         }
 
         return output;
-    }
-
-    /**
-     * Validates whether the actual WeatherData timestamp is within the range
-     * of the closest previous and next HH:15:00 timestamps.
-     *
-     * @param targetTimeStamp The target Unix timestamp to validate against
-     * @param actualTimeStamp The actual WeatherData Unix timestamp to validate
-     * @return True if the actual timestamp is within the range of the closest previous and next HH:15:00 timestamps
-     */
-    private boolean validateWeatherDataTime(Long targetTimeStamp, Long actualTimeStamp) {
-        long[] checkTimeStamps = findClosestTimeStamps(actualTimeStamp);
-
-        return checkTimeStamps[0] <= targetTimeStamp && targetTimeStamp <= checkTimeStamps[1];
     }
 
     /**

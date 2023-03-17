@@ -1,5 +1,8 @@
 package ee.taltech.fooddeliveryapp.exceptions;
 
+/**
+ * Thrown when a request is made for an unknown city.
+ */
 public class UnknownCityException extends Throwable {
     private final String message;
     private final Throwable cause;
