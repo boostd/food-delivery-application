@@ -5,11 +5,13 @@ import ee.taltech.fooddeliveryapp.database.WeatherDataRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.HashMap;
 import java.util.List;
 
 @Service
 public class WeatherDataService {
     private final WeatherDataRepository weatherDataRepository;
+    private final HashMap<Integer, WeatherData> latestWeatherData = new HashMap<>();
 
     @Autowired
     public WeatherDataService(WeatherDataRepository weatherDataRepository) {
@@ -18,21 +20,34 @@ public class WeatherDataService {
 
     /**
      * Returns the latest weather data for the selected city (by WMO code)
+     * If the cached HashMap has data for the specified WMO code, then return data from there.
+     * Otherwise, queries the database.
      *
      * @param wmoCode WMO code of the city to search
      * @return Latest weather data for the city
      */
     public WeatherData getLatestWeatherData(Integer wmoCode) {
-        return weatherDataRepository.findFirstByWmoCodeOrderByTimeStampDesc(wmoCode);
+        WeatherData output = latestWeatherData.getOrDefault(wmoCode, null);
+        return output != null ? output : weatherDataRepository.findFirstByWmoCodeOrderByTimeStampDesc(wmoCode);
     }
 
     /**
-     * Save all WeatherData objects from the list into the in memory H2 database
+     * Save all WeatherData objects from the list into the H2 database.
+     * Additionally, save them to a HashMap for fast lookup.
      *
      * @param weatherDataList WeatherData list to save
      */
     public void saveAllWeatherData(List<WeatherData> weatherDataList) {
         weatherDataRepository.saveAll(weatherDataList);
+
+        latestWeatherData.clear();
+
+        for (WeatherData weatherData : weatherDataList) {
+            Integer wmoCode = weatherData.getWmoCode();
+            if (wmoCode != null) {
+                latestWeatherData.put(wmoCode, weatherData);
+            }
+        }
     }
 
     /**
