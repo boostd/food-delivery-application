@@ -18,6 +18,7 @@ The fee depends on the selected vehicle and the weather conditions in the city a
 2. Open a terminal in the root directory of the project
 3. Run `gradle build` to build the application
 4. Run `java -jar build/libs/food-delivery-app-1.0.jar` to start the application
+    - Runs on port 8080 by default
 
 ## Endpoints
 The application exposes a single endpoint:
